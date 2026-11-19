@@ -3052,6 +3052,17 @@ function finalizeResults(){
   params.set('answers', JSON.stringify(combinedAnswers));
   params.set('qtimes', qtimesArr.join(','));
   params.set('question_meta', JSON.stringify(questionMeta));
+  /* FIX: đề dài (77 câu, domain dài) làm URL GET vượt giới hạn ~16KB của Google
+     → Apps Script từ chối, bài không về Sheet. Nếu URL quá dài thì rút gọn
+     question_meta (giữ question/module cho SAT_ThoiGian): bỏ 'skill' trùng
+     domain trước, vẫn dài thì bỏ luôn 'domain'. */
+  /* Ưu tiên tab KẾT QUẢ: nếu URL quá dài thì bỏ question_meta + qtimes
+     (chỉ dùng cho tab thời gian), giữ nguyên name/cls/q1..qN/answers. */
+  const MAX_URL_LEN = 8000;
+  if((WEBAPP_URL + "?" + params.toString()).length > MAX_URL_LEN){
+    params.delete('question_meta');
+    params.delete('qtimes');
+  }
   const beacon = new Image();
   beacon.src = WEBAPP_URL + "?" + params.toString();
 
@@ -3094,7 +3105,7 @@ function finalizeResults(){
   document.getElementById('testUI').style.display = 'none';
   document.getElementById('reviewPage').style.display = 'none';
   document.getElementById('resultsScreen').style.display = 'block';
-  renderTimeAnalysis();
+  // Đã tắt Time Analysis trên màn hình kết quả (card giữ display:none)
 }
 
 /* "Time Analysis" trên màn hình kết quả — dùng đúng dữ liệu qTimeAccum đã ghi
